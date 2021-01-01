@@ -1,3 +1,7 @@
-# svm_from_scratch
+# Quadratic Programming Soft-Margin Kernel SVC
 
-Creating a support vector classifier from scratch and benchmarking it against sklearn implementation. Fun weekend project.
+(IN PROGRESS)
+
+Building a soft-margin svc with kernel parameter using numpy and cvxopt. 
+
+Applied to the banknote_authentication dataset and benchmarking against SciKit-Learn models. 
