@@ -66,6 +66,9 @@ class SVC:
     
     
     def lagrange_multipliers(self, X,y):
+        """
+        Using QP to obtain lagrange_multipliers for the dual problem (treating it as minimisation)
+        """
         n_samples, n_features=X.shape
         q=-np.ones((n_samples, 1))
         P=y*y.T*self.gram(X)
