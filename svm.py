@@ -35,9 +35,9 @@ class SVC:
         self.weights=weights
         #calculate bias as mean of prediction errors for a zero bias model
         self.bias=0
+        self.fitted=True
         b=np.mean([y_k-self.predict(x_k) for (y_k, x_k) in zip(y,X)])
         self.bias=b
-        self.fitted=True
         toc=time.time()
         print('SVM fitted in', toc-tic, 'seconds.')
                   
