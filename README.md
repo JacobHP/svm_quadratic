@@ -1,7 +1,13 @@
 # Quadratic Programming Soft-Margin Kernel SVC
 
-(IN PROGRESS)
+(IN PROGRESS - TODO: Benchmarking)
 
 Building a soft-margin svc with kernel parameter using numpy and cvxopt. 
 
-Applied to the banknote_authentication dataset and benchmarking against SciKit-Learn models. 
+**Plots on Iris:**
+
+![alt text](https://github.com/JacobHP/svm_quadratic/blob/master/images/linear_iris.png?raw=true)
+
+![alt text](https://github.com/JacobHP/svm_quadratic/blob/master/images/poly_iris.png?raw=true)
+
+![alt text](https://github.com/JacobHP/svm_quadratic/blob/master/images/rbf_iris.png?raw=true)
