@@ -5,7 +5,7 @@ import time
 import pandas as pd
 """
 V.0.1 - Initial JHP. Need to clean up, vectorize prediction + vectorize other bits etc.
-        May see if I can make this multiclass if time. 
+        May try to make multiclass.
 """
 
 class SVC:
@@ -33,15 +33,15 @@ class SVC:
         self.support_vectors=support_vectors
         self.support_vector_labels=support_vector_labels
         self.weights=weights
-        #calculate bias as mean of prediction errors for a zero bias model
+        #calculate bias as mean of sv prediction errors for a zero bias model
         self.bias=0
         self.fitted=True
-        b=np.mean([y_k-self.predict(x_k) for (y_k, x_k) in zip(y,X)])
+        b=np.mean([y_k-self.decision_function(x_k) for (y_k, x_k) in zip(self.support_vector_labels, self.support_vectors)])
         self.bias=b
         toc=time.time()
         print('SVM fitted in', toc-tic, 'seconds.')
-                  
-    def predict(self, x):
+    
+    def decision_function(self, x):
         """
         Use a fitted svm to predict unseen test data. Currently predicts one value
         """
@@ -51,7 +51,14 @@ class SVC:
             result=self.bias
             for a_i, x_i, y_i in zip(self.weights, self.support_vectors, self.support_vector_labels):
                 result+=a_i*y_i * self.kernel(x_i, x)
-            return np.sign(result)
+            return result
+    
+    def predict(self, x):
+        """
+        Use a fitted svm to predict unseen test data. Currently predicts one value
+        """
+        result=self.decision_function(x)
+        return np.sign(result)
     
     def gram(self, X):
         """
@@ -71,7 +78,7 @@ class SVC:
         """
         n_samples, n_features=X.shape
         q=-np.ones((n_samples, 1))
-        P=y*y.T*self.gram(X)
+        P=np.outer(y,y)*self.gram(X)
         A=y.reshape(1,n_samples).astype(float)
         b=0.0
         G=np.concatenate((np.eye(n_samples), -np.eye(n_samples)))
