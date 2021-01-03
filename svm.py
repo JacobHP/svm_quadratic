@@ -26,7 +26,6 @@ class SVC:
         tic=time.time()
         lagrange_multipliers=self.lagrange_multipliers(X,y)
         support_vector_indices=lagrange_multipliers > self.threshold
-        print(support_vector_indices)
         weights=lagrange_multipliers[support_vector_indices]
         support_vectors=X[support_vector_indices]
         support_vector_labels=y[support_vector_indices]
