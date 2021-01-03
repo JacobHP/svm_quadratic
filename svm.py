@@ -2,10 +2,9 @@ import numpy as np
 import cvxopt
 cvxopt.solvers.options['show_progress'] = False
 import time
-import pandas as pd
 """
-V.0.1 - Initial JHP. Need to clean up, vectorize prediction + vectorize other bits etc.
-        May try to make multiclass.
+V.1 - Initial JHP. Need to clean up, vectorize etc.
+        TODO: Explore making this multiclass
 """
 
 class SVC:
@@ -27,38 +26,52 @@ class SVC:
         tic=time.time()
         lagrange_multipliers=self.lagrange_multipliers(X,y)
         support_vector_indices=lagrange_multipliers > self.threshold
+        print(support_vector_indices)
         weights=lagrange_multipliers[support_vector_indices]
         support_vectors=X[support_vector_indices]
         support_vector_labels=y[support_vector_indices]
         self.support_vectors=support_vectors
         self.support_vector_labels=support_vector_labels
         self.weights=weights
-        #calculate bias as mean of sv prediction errors for a zero bias model
+        #calculate bias as mean of prediction errors for a zero bias model
         self.bias=0
         self.fitted=True
-        b=np.mean([y_k-self.decision_function(x_k) for (y_k, x_k) in zip(self.support_vector_labels, self.support_vectors)])
+        b=np.mean([y_k-self.decision_function([x_k]).item() for (y_k, x_k) in zip(self.support_vector_labels,self.support_vectors)])
         self.bias=b
         toc=time.time()
         print('SVM fitted in', toc-tic, 'seconds.')
     
-    def decision_function(self, x):
+    def decision_function(self, X):
         """
-        Use a fitted svm to predict unseen test data. Currently predicts one value
+        computes the raw decision function on array X
         """
         if self.fitted==False:
             raise Exception('Fit before you make a prediction.')
         else:
-            result=self.bias
-            for a_i, x_i, y_i in zip(self.weights, self.support_vectors, self.support_vector_labels):
-                result+=a_i*y_i * self.kernel(x_i, x)
-            return result
-    
-    def predict(self, x):
+            results=[]
+            for x in X:
+                result=self.bias
+                for a_i, x_i, y_i in zip(self.weights, self.support_vectors, self.support_vector_labels):
+                    result+=a_i*y_i * self.kernel(x_i, x)
+                results.append(result)
+            return np.array(results)
+
+        
+    def predict(self, X):
         """
-        Use a fitted svm to predict unseen test data. Currently predicts one value
+        Compute class predictions (if single obs call model.predict([x]).item())
         """
-        result=self.decision_function(x)
-        return np.sign(result)
+        if self.fitted==False:
+            raise Exception('Fit before you make a prediction.')
+        else:
+            results=[]
+            for x in X: 
+                result_raw=self.bias
+                for a_i, x_i, y_i in zip(self.weights, self.support_vectors, self.support_vector_labels):
+                    result_raw+=a_i*y_i * self.kernel(x_i, x)
+                result=np.sign(result_raw)
+                results.append(result)
+            return np.array(results)
     
     def gram(self, X):
         """
@@ -70,36 +83,30 @@ class SVC:
             for j, x_j in enumerate(X):
                 gram[i,j]= self.kernel(x_i, x_j)
         return gram
-    
-    
+
     def lagrange_multipliers(self, X,y):
-        """
-        Using QP to obtain lagrange_multipliers for the dual problem (treating it as minimisation)
-        """
         n_samples, n_features=X.shape
-        q=-np.ones((n_samples, 1))
-        P=np.outer(y,y)*self.gram(X)
+        q=-np.ones((n_samples, 1)) 
+        P=np.outer(y,y)*self.gram(X) 
         A=y.reshape(1,n_samples).astype(float)
         b=0.0
         G=np.concatenate((np.eye(n_samples), -np.eye(n_samples)))
-        h=np.concatenate((self.C*np.ones((n_samples, 1)),np.zeros((n_samples,1))))
-        #call qp solver in cvxopt (must convert to cvxopt matrices)
+        h=np.concatenate((self.C*np.ones((n_samples, 1)),np.zeros((n_samples,1)))) 
         sol=cvxopt.solvers.qp(cvxopt.matrix(P), cvxopt.matrix(q), cvxopt.matrix(G),\
                               cvxopt.matrix(h), cvxopt.matrix(A), cvxopt.matrix(b))
-        return np.ravel(sol['x'])
-        
-      
+        return np.ravel(sol['x']) 
+    
+    
 
 class Kernel:
     """
     Kernel class - we only use positive definite kernels (as full rank) given that cvxopt requires full rank matrix
-    https://math.stackexchange.com/questions/130554/gaussian-kernels-why-are-they-full-rank
-    https://en.wikipedia.org/wiki/Positive-definite_kernel
+    Can try other kernels providing they're positive definite
     """
     @staticmethod
     def linear():
         def f(x,y):
-            return np.dot(x,y)
+            return np.inner(x,y)
         return f
     
     @staticmethod
@@ -113,20 +120,4 @@ class Kernel:
         def f(x,y):
             return np.exp(-(np.linalg.norm(x-y)**2)/(2*sigma**2))
         return f
-
-
-#test
-df=pd.read_csv('data_banknote_authentication.txt', delimiter=',', index_col=False)
-df.columns=['f_1','f_2','f_3','f_4','targ_temp']
-df['target']=df['targ_temp'].apply(lambda x: x-1 if x == 0 else x)
-X=df[['f_1', 'f_2','f_3','f_4']].to_numpy()
-y=df['target'].to_numpy()
-
-
-model_linear=SVC(C=0.5,kernel=Kernel.linear(), threshold=1e-5, soft_margin=True)
-model_polynomial=SVC(C=0.5, kernel=Kernel.polynomial(2), threshold=1e-5, soft_margin=True)
-model_rbf=SVC(C=0.5, kernel=Kernel.rbf(0.5), threshold=1e-5, soft_margin=True)
-
-for model in [model_linear, model_polynomial, model_rbf]:
-    model.fit(X,y)
     
